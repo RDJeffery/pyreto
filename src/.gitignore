@@ -2,7 +2,4 @@ venv/
 favorites.json
 __pycache__/
 TODO.txt
-*.tar.gz
-*.pkg.tar.zst
-.DS_Store
 

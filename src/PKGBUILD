@@ -1,0 +1,19 @@
+# Maintainer: RDJeffery <your.email@example.com>
+
+pkgname=pyreto
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="A color palette management tool for Linux"
+arch=('any')
+url="https://github.com/RDJeffery/pyreto"
+license=('MIT')
+depends=('python' 'python-textual' 'python-pyperclip')
+makedepends=('python-setuptools')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/RDJeffery/pyreto/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')  # Replace with actual checksum after creating the tarball
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  python setup.py install --root="$pkgdir/" --optimize=1
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+} 

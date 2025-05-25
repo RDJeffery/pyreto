@@ -96,8 +96,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built with [Textual](https://github.com/Textualize/textual)
 - Inspired by various color management tools
-- Thanks to all contributors and users!
-
-## Building for Arch Linux
-
-For detailed instructions on building Pyreto for Arch Linux, see [BUILD.md](./BUILD.md). 
+- Thanks to all contributors and users! 
