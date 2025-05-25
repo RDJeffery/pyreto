@@ -5,7 +5,7 @@ from datetime import datetime
 # Define storage paths
 STORAGE_PATH = Path.home() / ".local/share/hyprpicker"
 STORAGE_FILE = STORAGE_PATH / "colors.json"
-FAV_FILE = Path("favorites.json")  # You can move this to ~/.config if you want later
+FAV_FILE = Path.home() / ".config/pyreto/favorites.json"  # Updated path for favorites.json
 
 def ensure_storage():
     STORAGE_PATH.mkdir(parents=True, exist_ok=True)
