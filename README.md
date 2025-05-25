@@ -26,7 +26,7 @@ sudo pacman -S python-pip python-pywal
 
 2. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/pyreto.git
+git clone https://github.com/RDjeffery/pyreto.git
 cd pyreto
 ```
 
@@ -100,4 +100,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Building for Arch Linux
 
-For detailed instructions on building Pyreto for Arch Linux, see [BUILD.md](./BUILD.md). 
+For detailed instructions on building Pyreto for Arch Linux, see [BUILD.md](docs/BUILD.md). 
