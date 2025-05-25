@@ -202,7 +202,7 @@ class PaletteVault(App):
     def update_header(self):
         view_type = "Favorites" if self.show_only_favs else "Color Palette Database"
         sort_indicator = "↓" if self.sort_reversed else "↑"
-        self.header.update(f"󰏙 Pyreto - {view_type} {sort_indicator}")
+        self.header.update(f"Pyreto - {view_type} {sort_indicator}")
 
     async def on_input_changed(self, event: Input.Changed) -> None:
         """Handle search input changes."""
