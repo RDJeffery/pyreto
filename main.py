@@ -15,6 +15,7 @@ from textual.message import Message
 
 from color_store import load_colors, load_favorites, save_favorites
 from color_utils import search_colors, get_color_name
+from palette_generator import save_palette_to_markdown
 
 
 def setup_logging(config):
@@ -250,6 +251,20 @@ class PaletteVault(App):
             if isinstance(item, ColorItem):
                 pyperclip.copy(f"#{item.color}")
                 self.notify(f"Copied #{item.color} to clipboard!")
+
+        elif event.key == "p":
+            if not self.is_valid_selection(selected):
+                self.notify("No color selected! Please select a color first.")
+                return
+                
+            item = self.list_view.children[selected]
+            if isinstance(item, ColorItem):
+                try:
+                    filepath = save_palette_to_markdown(f"#{item.color}")
+                    self.notify(f"Generated color palette! Saved to: {filepath}")
+                except Exception as e:
+                    self.logger.error(f"Failed to generate palette: {e}")
+                    self.notify("Failed to generate color palette. Check logs for details.")
 
     def is_valid_selection(self, index: int) -> bool:
         """Check if the given index is a valid selection in the list view."""
