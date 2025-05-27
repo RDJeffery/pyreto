@@ -65,10 +65,6 @@ def load_config():
         "debug": {
             "enabled": False,
             "level": "INFO"
-        },
-        "search": {
-            "enabled": True,
-            "copy_on_select": True
         }
     }
 

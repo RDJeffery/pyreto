@@ -4,6 +4,7 @@ setup(
     name="pyreto",
     version="0.1.0",
     packages=find_packages(),
+    py_modules=['main', 'color_store', 'color_utils'],
     install_requires=[
         "textual>=0.40.0",
         "pyperclip>=1.8.2",
@@ -20,4 +21,9 @@ setup(
         "Operating System :: POSIX :: Linux",
     ],
     python_requires=">=3.6",
+    entry_points={
+        'console_scripts': [
+            'pyreto=main:main',
+        ],
+    },
 ) 
