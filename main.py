@@ -12,10 +12,11 @@ from textual.widgets import ListView, ListItem, Static, Input
 from textual.containers import Container, Vertical, Horizontal
 from textual import events, on
 from textual.message import Message
+from textual.screen import Screen
 
 from color_store import load_colors, load_favorites, save_favorites
 from color_utils import search_colors, get_color_name
-from palette_generator import save_palette_to_markdown
+from palette_generator import save_palette_to_markdown, list_saved_palettes, open_palettes_directory
 
 
 def setup_logging(config):
@@ -66,6 +67,14 @@ def load_config():
         "debug": {
             "enabled": False,
             "level": "INFO"
+        },
+        "markdown_viewer": {
+            "command": "",  # Leave empty to use system default
+            "options": {
+                "glow": "glow",  # Popular markdown viewer
+                "bat": "bat",    # Another popular viewer
+                "mdcat": "mdcat" # Another option
+            }
         }
     }
 
@@ -162,6 +171,131 @@ class ColorItem(ListItem):
     def refresh_label(self):
         label = self.query_one("#label", Static)
         label.update(self.build_label())
+
+
+class PaletteItem(ListItem):
+    def __init__(self, name: str, base_color: str, timestamp: datetime, filepath: str):
+        # Create a unique ID using a hash of the filepath
+        unique_id = f"palette_{hash(filepath)}"
+        super().__init__(id=unique_id)
+        self._name = name
+        self._base_color = base_color
+        self._timestamp = timestamp
+        self._filepath = filepath
+
+    def compose(self) -> ComposeResult:
+        yield Static(self.build_label(), id="label", markup=True)
+
+    def build_label(self) -> str:
+        swatch = f"[#{self._base_color.lstrip('#')}]██[/]"  # Color swatch
+        time_str = self._timestamp.strftime("%Y-%m-%d %H:%M")
+        return f"📋 {swatch}  [b]{self._name}[/]  •  [dim]{time_str}[/dim]"
+
+
+class PaletteViewScreen(Screen):
+    """Screen for viewing saved palettes."""
+    
+    def compose(self) -> ComposeResult:
+        yield Static("Saved Palettes (Press 'q' to return)", id="header")
+        self.list_view = ListView()
+        yield self.list_view
+    
+    def on_mount(self) -> None:
+        # Get logger from parent app
+        self.logger = self.app.logger
+        self.logger.debug("PaletteViewScreen mounted")
+        self.load_palettes()
+    
+    def load_palettes(self) -> None:
+        """Load and display saved palettes."""
+        self.logger.debug("Loading palettes...")
+        
+        # Clear existing items
+        self.list_view.clear()
+        
+        palettes = list_saved_palettes()
+        self.logger.debug(f"Found {len(palettes)} palettes")
+        
+        if not palettes:
+            self.logger.debug("No palettes found, showing message")
+            self.list_view.append(ListItem(Static("No palettes found. Generate some with 'p'!")))
+            return
+            
+        for palette in palettes:
+            self.logger.debug(f"Adding palette to view: {palette['name']}")
+            item = PaletteItem(
+                name=palette['name'],
+                base_color=palette['base_color'],
+                timestamp=palette['timestamp'],
+                filepath=palette['filepath']
+            )
+            self.list_view.append(item)
+        
+        self.logger.debug("Finished loading palettes")
+    
+    async def on_key(self, event: events.Key) -> None:
+        if event.key == "q":
+            self.logger.debug("Returning to main screen")
+            self.app.pop_screen()
+        elif event.key == "enter":
+            selected = self.list_view.index
+            if 0 <= selected < len(self.list_view.children):
+                item = self.list_view.children[selected]
+                if isinstance(item, PaletteItem):
+                    self.logger.debug(f"Opening palette file: {item._filepath}")
+                    
+                    # Try to open in Ghostty first
+                    if subprocess.run(['which', 'ghostty'], capture_output=True).returncode == 0:
+                        try:
+                            self.logger.debug("Opening with Ghostty")
+                            # Launch Ghostty with glow in TUI mode and auto style
+                            subprocess.Popen([
+                                'ghostty',
+                                '-e',
+                                'glow',
+                                '--tui',
+                                '--style',
+                                'auto',
+                                item._filepath
+                            ])
+                            self.notify("Opening palette in Ghostty with glow...")
+                        except Exception as e:
+                            self.logger.error(f"Failed to open with Ghostty: {e}")
+                            self.notify("Failed to open with Ghostty. Falling back to default viewer.")
+                            self._open_with_default_viewer(item._filepath)
+                    else:
+                        self._open_with_default_viewer(item._filepath)
+
+    def _open_with_default_viewer(self, filepath: str) -> None:
+        """Open a file with the default markdown viewer."""
+        config = self.app.config
+        markdown_viewer = config.get("markdown_viewer", {}).get("command")
+        
+        if markdown_viewer:
+            try:
+                self.logger.debug(f"Opening with configured viewer: {markdown_viewer}")
+                subprocess.run([markdown_viewer, filepath])
+            except Exception as e:
+                self.logger.error(f"Failed to open with configured viewer: {e}")
+                self.notify("Failed to open with configured viewer. Check config.")
+        else:
+            # Try glow first if available
+            if subprocess.run(['which', 'glow'], capture_output=True).returncode == 0:
+                try:
+                    self.logger.debug("Using glow as default viewer")
+                    subprocess.run(['glow', filepath])
+                    return
+                except Exception as e:
+                    self.logger.error(f"Failed to open with glow: {e}")
+            
+            # Fallback to system default
+            self.logger.debug("Using system default viewer")
+            if subprocess.run(['which', 'xdg-open'], capture_output=True).returncode == 0:
+                subprocess.run(['xdg-open', filepath])
+            elif subprocess.run(['which', 'open'], capture_output=True).returncode == 0:
+                subprocess.run(['open', filepath])
+            else:
+                subprocess.run(['explorer', filepath])
 
 
 class PaletteVault(App):
@@ -265,6 +399,13 @@ class PaletteVault(App):
                 except Exception as e:
                     self.logger.error(f"Failed to generate palette: {e}")
                     self.notify("Failed to generate color palette. Check logs for details.")
+
+        elif event.key == "v":
+            await self.push_screen(PaletteViewScreen())
+
+        elif event.key == "o":
+            open_palettes_directory()
+            self.notify("Opening Palettes directory...")
 
     def is_valid_selection(self, index: int) -> bool:
         """Check if the given index is a valid selection in the list view."""
